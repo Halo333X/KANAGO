@@ -4,98 +4,144 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kana Trainer</title>
+
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
 <style>
 *{box-sizing:border-box}
+
 body{
     margin:0;
     font-family:'Inter',sans-serif;
-    background:radial-gradient(circle at top left,#1f1c2c,#302b63,#24243e);
+    background:linear-gradient(135deg,#141e30,#243b55);
     color:white;
     display:flex;
     justify-content:center;
     align-items:center;
-    height:100vh;
+    min-height:100vh;
 }
-.container{
-    width:95%;
-    max-width:700px;
-    padding:30px;
-    border-radius:25px;
-    backdrop-filter:blur(20px);
-    background:rgba(255,255,255,0.05);
-    border:1px solid rgba(255,255,255,0.1);
-    box-shadow:0 15px 40px rgba(0,0,0,0.6);
+
+.app{
+    width:100%;
+    max-width:480px;
+    padding:20px;
 }
-h1{text-align:center;margin-bottom:15px}
-.stats{
+
+.card{
+    background:rgba(255,255,255,0.06);
+    backdrop-filter:blur(18px);
+    border-radius:20px;
+    padding:20px;
+    box-shadow:0 15px 40px rgba(0,0,0,0.5);
+}
+
+.header{
     display:flex;
     justify-content:space-between;
+    align-items:center;
     margin-bottom:15px;
-    font-size:14px;
 }
+
 .kana{
     text-align:center;
-    font-size:70px;
+    font-size:60px;
     margin:20px 0;
-    letter-spacing:8px;
-    transition:0.2s;
+    letter-spacing:6px;
 }
+
 input{
     width:100%;
     padding:14px;
     font-size:18px;
-    border-radius:12px;
     border:none;
-    outline:none;
+    border-radius:12px;
     text-align:center;
     background:rgba(255,255,255,0.08);
     color:white;
 }
+
 .buttons{
     display:flex;
     gap:10px;
     margin-top:10px;
 }
+
 button{
     flex:1;
-    padding:10px;
+    padding:12px;
     border:none;
-    border-radius:10px;
-    cursor:pointer;
+    border-radius:12px;
     font-weight:600;
+    cursor:pointer;
 }
+
 .primary{background:#00ffcc;color:black}
 .danger{background:#ff3c6f;color:white}
-.result{min-height:24px;margin-top:8px;text-align:center}
+.settings-btn{
+    background:#444;
+    padding:8px 12px;
+    border-radius:10px;
+}
+
+.result{
+    text-align:center;
+    margin-top:8px;
+    min-height:24px;
+}
+
 .correct{color:#00ff88}
 .incorrect{color:#ff4c4c}
-.config{
-    margin-top:20px;
-    font-size:13px;
+
+/* Modal */
+
+.modal{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.7);
+    display:none;
+    justify-content:center;
+    align-items:center;
+    padding:15px;
 }
+
+.modal-content{
+    background:#1e1e2f;
+    width:100%;
+    max-width:500px;
+    max-height:85vh;
+    overflow:auto;
+    border-radius:18px;
+    padding:20px;
+}
+
 .symbol-grid{
     display:grid;
-    grid-template-columns:repeat(10,1fr);
-    gap:4px;
-    margin-top:6px;
+    grid-template-columns:repeat(8,1fr);
+    gap:6px;
+    margin-top:10px;
 }
+
 .symbol-grid label{
-    font-size:14px;
     text-align:center;
+    font-size:16px;
+}
+
+@media(max-width:400px){
+    .kana{font-size:48px}
 }
 </style>
 </head>
 <body>
 
-<div class="container">
+<div class="app">
+<div class="card">
 
-<h1>Kana Trainer</h1>
-
-<div class="stats">
-    <div>Score: <span id="score">0</span></div>
-    <div>Tiempo: <span id="time">10</span></div>
+<div class="header">
+    <div>
+        <div>Score: <span id="score">0</span></div>
+        <div>Tiempo: <span id="time">10</span></div>
+    </div>
+    <button class="settings-btn" onclick="openSettings()">⚙</button>
 </div>
 
 <div class="kana" id="kana">Presiona Iniciar</div>
@@ -109,20 +155,38 @@ button{
     <button class="danger" onclick="finalizar()">Finalizar</button>
 </div>
 
-<div class="config">
-    <strong>Sistemas:</strong><br>
-    <label><input type="checkbox" id="useHira" checked> Hiragana</label>
-    <label><input type="checkbox" id="useKata"> Katakana</label>
-    <br><br>
-
-    <strong>Tiempo (5–20 seg):</strong><br>
-    <input type="range" id="tiempoSlider" min="5" max="20" value="10">
-    <br><br>
-
-    <strong>Símbolos:</strong>
-    <div class="symbol-grid" id="symbolGrid"></div>
+</div>
 </div>
 
+<!-- SETTINGS MODAL -->
+
+<div class="modal" id="modal">
+<div class="modal-content">
+
+<h3>Ajustes</h3>
+
+<label><input type="checkbox" id="useHira" checked> Hiragana</label><br>
+<label><input type="checkbox" id="useKata"> Katakana</label>
+
+<br><br>
+
+<label>Tiempo (5–20 seg)</label>
+<input type="range" id="tiempoSlider" min="5" max="20" value="10">
+
+<br><br>
+
+<label><input type="checkbox" id="toggleVidas"> Activar vidas</label>
+<input type="number" id="vidasInput" value="3" min="1" max="10">
+
+<br><br>
+
+<strong>Símbolos</strong>
+<div class="symbol-grid" id="symbolGrid"></div>
+
+<br>
+<button class="primary" onclick="closeSettings()">Guardar</button>
+
+</div>
 </div>
 
 <script>
@@ -141,10 +205,9 @@ const hira={
 };
 
 const kata=Object.fromEntries(
-    Object.entries(hira).map(([k,v])=>[
-        k.replace(/[ぁ-ん]/g,c=>String.fromCharCode(c.charCodeAt(0)+96)),v
-    ])
-);
+Object.entries(hira).map(([k,v])=>[
+k.replace(/[ぁ-ん]/g,c=>String.fromCharCode(c.charCodeAt(0)+96)),v
+]));
 
 let pool=[];
 let romajiCorrecto="";
@@ -156,30 +219,35 @@ let juegoActivo=false;
 const input=document.getElementById("input");
 const kanaDisplay=document.getElementById("kana");
 const result=document.getElementById("result");
-const scoreDisplay=document.getElementById("score");
-const timeDisplay=document.getElementById("time");
 
-input.addEventListener("input",()=>{
-    input.value=input.value.toLowerCase();
+input.addEventListener("input", () => {
+
+    input.value = input.value.toLowerCase();
     if(!juegoActivo) return;
 
-    const intento=input.value;
+    const intento = input.value;
 
-    if(intento===romajiCorrecto){
+    // Si acierta completamente
+    if(intento === romajiCorrecto){
         score++;
-        scoreDisplay.textContent=score;
-        input.value="";
+        document.getElementById("score").textContent = score;
+
+        input.value = "";
+        result.innerHTML = "";
+
         generar();
         reiniciarTimer();
         return;
     }
 
-    result.innerHTML="";
-    for(let i=0;i<intento.length;i++){
-        if(romajiCorrecto[i]===intento[i]){
-            result.innerHTML+=`<span class="correct">${intento[i]}</span>`;
-        }else{
-            result.innerHTML+=`<span class="incorrect">${intento[i]}</span>`;
+    // Validación parcial en tiempo real
+    result.innerHTML = "";
+
+    for(let i = 0; i < intento.length; i++){
+        if(romajiCorrecto[i] === intento[i]){
+            result.innerHTML += `<span class="correct">${intento[i]}</span>`;
+        } else {
+            result.innerHTML += `<span class="incorrect">${intento[i]}</span>`;
         }
     }
 });
@@ -212,17 +280,15 @@ function actualizarPool(){
 
 function generar(){
     actualizarPool();
-
     if(pool.length===0){
         kanaDisplay.textContent="Selecciona símbolos";
         return;
     }
 
-    // 🔹 LIMPIAR estado anterior
-    input.value = "";
-    result.innerHTML = "";
+    input.value="";
+    result.innerHTML="";
 
-    let len = Math.floor(Math.random()*5)+4;
+    let len=Math.floor(Math.random()*5)+4;
     let frase="";
     romajiCorrecto="";
 
@@ -237,7 +303,7 @@ function generar(){
 
 function iniciar(){
     score=0;
-    scoreDisplay.textContent=0;
+    document.getElementById("score").textContent=0;
     juegoActivo=true;
     generar();
     iniciarTimer();
@@ -246,21 +312,18 @@ function iniciar(){
 function finalizar(){
     juegoActivo=false;
     clearInterval(intervalo);
-    intervalo=null;
     kanaDisplay.textContent="Juego Finalizado";
 }
 
 function iniciarTimer(){
     clearInterval(intervalo);
     tiempoRestante=parseInt(tiempoSlider.value);
-    timeDisplay.textContent=tiempoRestante;
+    document.getElementById("time").textContent=tiempoRestante;
 
     intervalo=setInterval(()=>{
         if(!juegoActivo) return;
-
         tiempoRestante--;
-        timeDisplay.textContent=tiempoRestante;
-
+        document.getElementById("time").textContent=tiempoRestante;
         if(tiempoRestante<=0){
             generar();
             reiniciarTimer();
@@ -273,7 +336,50 @@ function reiniciarTimer(){
     iniciarTimer();
 }
 
+function openSettings(){
+    document.getElementById("modal").style.display="flex";
+}
+
+function closeSettings(){
+    guardarConfig();
+    document.getElementById("modal").style.display="none";
+}
+
+function guardarConfig(){
+    const selected=[...document.querySelectorAll(".symbolCheck:checked")].map(c=>c.value);
+
+    const config={
+        useHira:useHira.checked,
+        useKata:useKata.checked,
+        tiempo:tiempoSlider.value,
+        vidas:toggleVidas.checked,
+        vidasMax:vidasInput.value,
+        symbols:selected
+    };
+
+    localStorage.setItem("kanaConfig",JSON.stringify(config));
+}
+
+function cargarConfig(){
+    const data=localStorage.getItem("kanaConfig");
+    if(!data) return;
+    const config=JSON.parse(data);
+
+    useHira.checked=config.useHira;
+    useKata.checked=config.useKata;
+    tiempoSlider.value=config.tiempo;
+    toggleVidas.checked=config.vidas;
+    vidasInput.value=config.vidasMax;
+
+    setTimeout(()=>{
+        document.querySelectorAll(".symbolCheck").forEach(c=>{
+            c.checked=config.symbols.includes(c.value);
+        });
+    },50);
+}
+
 construirGrid();
+cargarConfig();
 
 </script>
 </body>
