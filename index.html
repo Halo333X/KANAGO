@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kana Trainer</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+<style>
+*{box-sizing:border-box}
+body{
+    margin:0;
+    font-family:'Inter',sans-serif;
+    background:radial-gradient(circle at top left,#1f1c2c,#302b63,#24243e);
+    color:white;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+.container{
+    width:95%;
+    max-width:700px;
+    padding:30px;
+    border-radius:25px;
+    backdrop-filter:blur(20px);
+    background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.1);
+    box-shadow:0 15px 40px rgba(0,0,0,0.6);
+}
+h1{text-align:center;margin-bottom:15px}
+.stats{
+    display:flex;
+    justify-content:space-between;
+    margin-bottom:15px;
+    font-size:14px;
+}
+.kana{
+    text-align:center;
+    font-size:70px;
+    margin:20px 0;
+    letter-spacing:8px;
+    transition:0.2s;
+}
+input{
+    width:100%;
+    padding:14px;
+    font-size:18px;
+    border-radius:12px;
+    border:none;
+    outline:none;
+    text-align:center;
+    background:rgba(255,255,255,0.08);
+    color:white;
+}
+.buttons{
+    display:flex;
+    gap:10px;
+    margin-top:10px;
+}
+button{
+    flex:1;
+    padding:10px;
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
+    font-weight:600;
+}
+.primary{background:#00ffcc;color:black}
+.danger{background:#ff3c6f;color:white}
+.result{min-height:24px;margin-top:8px;text-align:center}
+.correct{color:#00ff88}
+.incorrect{color:#ff4c4c}
+.config{
+    margin-top:20px;
+    font-size:13px;
+}
+.symbol-grid{
+    display:grid;
+    grid-template-columns:repeat(10,1fr);
+    gap:4px;
+    margin-top:6px;
+}
+.symbol-grid label{
+    font-size:14px;
+    text-align:center;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<h1>Kana Trainer</h1>
+
+<div class="stats">
+    <div>Score: <span id="score">0</span></div>
+    <div>Tiempo: <span id="time">10</span></div>
+</div>
+
+<div class="kana" id="kana">Presiona Iniciar</div>
+
+<input id="input" placeholder="Escribe en romaji">
+
+<div class="result" id="result"></div>
+
+<div class="buttons">
+    <button class="primary" onclick="iniciar()">Iniciar</button>
+    <button class="danger" onclick="finalizar()">Finalizar</button>
+</div>
+
+<div class="config">
+    <strong>Sistemas:</strong><br>
+    <label><input type="checkbox" id="useHira" checked> Hiragana</label>
+    <label><input type="checkbox" id="useKata"> Katakana</label>
+    <br><br>
+
+    <strong>Tiempo (5–20 seg):</strong><br>
+    <input type="range" id="tiempoSlider" min="5" max="20" value="10">
+    <br><br>
+
+    <strong>Símbolos:</strong>
+    <div class="symbol-grid" id="symbolGrid"></div>
+</div>
+
+</div>
+
+<script>
+
+const hira={
+"あ":"a","い":"i","う":"u","え":"e","お":"o",
+"か":"ka","き":"ki","く":"ku","け":"ke","こ":"ko",
+"さ":"sa","し":"shi","す":"su","せ":"se","そ":"so",
+"た":"ta","ち":"chi","つ":"tsu","て":"te","と":"to",
+"な":"na","に":"ni","ぬ":"nu","ね":"ne","の":"no",
+"は":"ha","ひ":"hi","ふ":"fu","へ":"he","ほ":"ho",
+"ま":"ma","み":"mi","む":"mu","め":"me","も":"mo",
+"や":"ya","ゆ":"yu","よ":"yo",
+"ら":"ra","り":"ri","る":"ru","れ":"re","ろ":"ro",
+"わ":"wa","を":"wo","ん":"n"
+};
+
+const kata=Object.fromEntries(
+    Object.entries(hira).map(([k,v])=>[
+        k.replace(/[ぁ-ん]/g,c=>String.fromCharCode(c.charCodeAt(0)+96)),v
+    ])
+);
+
+let pool=[];
+let romajiCorrecto="";
+let score=0;
+let tiempoRestante=10;
+let intervalo=null;
+let juegoActivo=false;
+
+const input=document.getElementById("input");
+const kanaDisplay=document.getElementById("kana");
+const result=document.getElementById("result");
+const scoreDisplay=document.getElementById("score");
+const timeDisplay=document.getElementById("time");
+
+input.addEventListener("input",()=>{
+    input.value=input.value.toLowerCase();
+    if(!juegoActivo) return;
+
+    const intento=input.value;
+
+    if(intento===romajiCorrecto){
+        score++;
+        scoreDisplay.textContent=score;
+        input.value="";
+        generar();
+        reiniciarTimer();
+        return;
+    }
+
+    result.innerHTML="";
+    for(let i=0;i<intento.length;i++){
+        if(romajiCorrecto[i]===intento[i]){
+            result.innerHTML+=`<span class="correct">${intento[i]}</span>`;
+        }else{
+            result.innerHTML+=`<span class="incorrect">${intento[i]}</span>`;
+        }
+    }
+});
+
+function construirGrid(){
+    const grid=document.getElementById("symbolGrid");
+    const all={...hira,...kata};
+    for(let s in all){
+        const label=document.createElement("label");
+        label.innerHTML=`<input type="checkbox" class="symbolCheck" value="${s}" checked> ${s}`;
+        grid.appendChild(label);
+    }
+}
+
+function actualizarPool(){
+    pool=[];
+    const selected=[...document.querySelectorAll(".symbolCheck:checked")].map(c=>c.value);
+
+    if(useHira.checked){
+        for(let s of selected){
+            if(hira[s]) pool.push({kana:s,valor:hira[s]});
+        }
+    }
+    if(useKata.checked){
+        for(let s of selected){
+            if(kata[s]) pool.push({kana:s,valor:kata[s]});
+        }
+    }
+}
+
+function generar(){
+    actualizarPool();
+
+    if(pool.length===0){
+        kanaDisplay.textContent="Selecciona símbolos";
+        return;
+    }
+
+    // 🔹 LIMPIAR estado anterior
+    input.value = "";
+    result.innerHTML = "";
+
+    let len = Math.floor(Math.random()*5)+4;
+    let frase="";
+    romajiCorrecto="";
+
+    for(let i=0;i<len;i++){
+        const r=pool[Math.floor(Math.random()*pool.length)];
+        frase+=r.kana;
+        romajiCorrecto+=r.valor;
+    }
+
+    kanaDisplay.textContent=frase;
+}
+
+function iniciar(){
+    score=0;
+    scoreDisplay.textContent=0;
+    juegoActivo=true;
+    generar();
+    iniciarTimer();
+}
+
+function finalizar(){
+    juegoActivo=false;
+    clearInterval(intervalo);
+    intervalo=null;
+    kanaDisplay.textContent="Juego Finalizado";
+}
+
+function iniciarTimer(){
+    clearInterval(intervalo);
+    tiempoRestante=parseInt(tiempoSlider.value);
+    timeDisplay.textContent=tiempoRestante;
+
+    intervalo=setInterval(()=>{
+        if(!juegoActivo) return;
+
+        tiempoRestante--;
+        timeDisplay.textContent=tiempoRestante;
+
+        if(tiempoRestante<=0){
+            generar();
+            reiniciarTimer();
+        }
+    },1000);
+}
+
+function reiniciarTimer(){
+    clearInterval(intervalo);
+    iniciarTimer();
+}
+
+construirGrid();
+
+</script>
+</body>
+</html>
