@@ -1,2 +1,2 @@
-# KanaTrainer
+# KANAGO
 By @Halo333X
